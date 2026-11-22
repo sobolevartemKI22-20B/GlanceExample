@@ -14,11 +14,24 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import kotlinx.coroutines.Job
-import kotlin.time.Duration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.glance.appwidget.updateAll
+import androidx.compose.ui.unit.sp
+import java.util.Locale
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import kotlinx.coroutines.delay
+import androidx.glance.text.TextStyle
+import androidx.glance.text.FontWeight
+import androidx.glance.text.Text
+import androidx.glance.unit.ColorProvider
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+
+
 
 class StockAppWidget : GlanceAppWidget() {
 
@@ -28,7 +41,7 @@ class StockAppWidget : GlanceAppWidget() {
 
         if (job == null) {
             job = startUpdateJob(
-                Duration.ofSeconds(20).toMillis(),
+                20_000L,
                 context
             )
         }
@@ -49,15 +62,40 @@ class StockAppWidget : GlanceAppWidget() {
         }
     }
 
+    @Composable
+    private fun StockDisplay(stateCount: Float) {
+        val color = if (PriceDataRepo.change > 0) {
+            GlanceTheme.colors.primary
+        } else {
+            GlanceTheme.colors.error
+        }
+        val textStyle = TextStyle(
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+        Text(PriceDataRepo.ticker, style = TextStyle(
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold)
+        )
+        Text(text = String.format(Locale.getDefault(), "%.2f", stateCount),
+            style = textStyle)
+        Text("${PriceDataRepo.change} %", style = textStyle)
+    }
+
 
     @Composable
     fun GlanceContent() {
+        val stateCount by PriceDataRepo.currentPrice.collectAsState()
+        Small(stateCount)
+    }
+    @Composable
+    private fun Small(stateCount: Float) {
         Column(modifier = GlanceModifier
             .fillMaxSize()
             .background(GlanceTheme.colors.background)
-            .padding(8.dp)
-        ) {
-            Text("Demo")
+            .padding(8.dp)) {
+            StockDisplay(stateCount)
         }
     }
 }
