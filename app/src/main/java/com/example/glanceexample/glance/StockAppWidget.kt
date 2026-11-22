@@ -13,10 +13,25 @@ import androidx.glance.background
 import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
+import kotlinx.coroutines.Job
+import kotlin.time.Duration
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import androidx.glance.appwidget.updateAll
 
 class StockAppWidget : GlanceAppWidget() {
 
+    private var job: Job? = null
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+
+        if (job == null) {
+            job = startUpdateJob(
+                Duration.ofSeconds(20).toMillis(),
+                context
+            )
+        }
 
         provideContent {
             GlanceTheme {
@@ -24,6 +39,16 @@ class StockAppWidget : GlanceAppWidget() {
             }
         }
     }
+    private fun startUpdateJob(timeInterval: Long, context: Context): Job {
+        return CoroutineScope(Dispatchers.Default).launch {
+            while (true) {
+                PriceDataRepo.update()
+                StockAppWidget().updateAll(context)
+                delay(timeInterval)
+            }
+        }
+    }
+
 
     @Composable
     fun GlanceContent() {
